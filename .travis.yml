@@ -1,0 +1,31 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  #before uploading run test using developement Docker file
+  - docker build -t dharmikdocker/multi-docker -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run -e CI=true dharmikdocker/multi-docker npm run test -- --coverage
+#After script executes sucess fully 
+
+#build all the images
+after_sucess:
+  - docker build -t dharmikdocker/multi-client ./client
+  - docker build -t dharmikdocker/multi-nginx ./nginx
+  - docker build -t dharmikdocker/multi-server ./server
+  - docker build -t dharmikdocker/multi-worker ./worker
+  #Log in Docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  #Docker login command take multi step to login like fist enter docker id and then docker password with cli it is not possbile to logIn in multiple stpes
+  #To logIn in single line what we are doing is
+  # echo "$DOCKER_PASSWORD" pushing docker password fetching from Travis environment to next pipe using '|'  (mean input to the next command)
+  # docker login -u "$DOCKER_ID" tries to login with docker id and  --password-stdin says that here you will get the password from standard input (which is emitted by echo "$DOCKER_PASSWORD" )
+  #Take those images and push them to docker hub
+  - docker push dharmikdocker/multi-client 
+  - docker push dharmikdocker/multi-nginx 
+  - docker push dharmikdocker/multi-server 
+  - docker push dharmikdocker/multi-worker 
+
+
